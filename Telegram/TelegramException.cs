@@ -1,4 +1,7 @@
-﻿namespace Telegram
+﻿// Copyright (c) 2024 Marco Concas. All rights reserved.
+// Licensed under the Apache License.
+
+namespace Telegram
 {
     public class TelegramException : Exception
     {

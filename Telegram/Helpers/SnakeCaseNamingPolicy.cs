@@ -1,4 +1,7 @@
-﻿using System.Text;
+﻿// Copyright (c) 2024 Marco Concas. All rights reserved.
+// Licensed under the Apache License.
+
+using System.Text;
 using System.Text.Json;
 
 namespace Telegram.Helpers
