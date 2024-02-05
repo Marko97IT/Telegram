@@ -1,4 +1,6 @@
-﻿using Telegram.Types;
+﻿using System.Security.Cryptography.X509Certificates;
+using Telegram.Configurations;
+using Telegram.Enums;
 
 namespace Telegram.ConsoleTest
 {
@@ -6,15 +8,21 @@ namespace Telegram.ConsoleTest
     {
         static void Main(string[] args)
         {
-            var telegramClient = new TelegramClient("6436458381:AAHSxWbCRqwlSbjnQH1vppmtbyl01PkZK_s");
-            telegramClient.ReceiveUpdates().Start();
-            telegramClient.NewUpdatesReceived += ((object? sender, Update[] e) =>
+            using var telegramUpdatesHandler = new TelegramUpdatesHandler(GetUpdatesWay.Webhook, "6436458381:AAHSxWbCRqwlSbjnQH1vppmtbyl01PkZK_s", new WebhookConfiguration
             {
-                var a = 1;
+                Domain = "dev.telegramsdk.net",
+                //Certificate = new X509Certificate2(@"C:\Users\Administrator\Desktop\cert.pfx"),
+                MaxConnections = 50,
+                DropPendingUpdates = true
             });
-            Console.ReadKey();
-            telegramClient.Dispose();
-            Console.ReadKey();
+
+            Console.CancelKeyPress += (object? sender, ConsoleCancelEventArgs e) =>
+            {
+                telegramUpdatesHandler.StopReceivingUpdates();
+            };
+            
+            telegramUpdatesHandler.StartReceivingUpdates();
+            Console.ReadLine();
         }
     }
 }

@@ -1,26 +1,37 @@
 ﻿// Copyright (c) 2024 Marco Concas. All rights reserved.
 // Licensed under the Apache License.
 
-using System.Net.Http.Json;
+using System.Net.Http.Headers;
 using System.Text.Json;
 
 namespace Telegram.Helpers
 {
     internal static class HttpClientExtensions
     {
-        private static readonly JsonSerializerOptions _jsonSerializerOptions = new()
+        public static HttpResponseMessage Get(this HttpClient httpClient, string? requestUri)
         {
-            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
-        };
-
-        public static async Task<TelegramResponse<T>?> GetTelegramResponseAsync<T>(this HttpContent content, CancellationToken cancellationToken = default)
-        {
-            return await content.ReadFromJsonAsync<TelegramResponse<T>>(_jsonSerializerOptions, cancellationToken);
+            using var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, requestUri);
+            return httpClient.Send(httpRequestMessage);
         }
 
-        public static TelegramResponse<T>? GetTelegramResponse<T>(this Stream stream)
+        public static HttpResponseMessage Post(this HttpClient httpClient, string? requestUri, HttpContent? content)
         {
-            return JsonSerializer.Deserialize<TelegramResponse<T>>(stream, _jsonSerializerOptions);
+            using var httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, requestUri) { Content = content };
+            return httpClient.Send(httpRequestMessage);
+        }
+
+        public static HttpResponseMessage PostAsJson<T>(this HttpClient httpClient, string? requestUri, T value, JsonSerializerOptions? options = null)
+        {
+            var json = JsonSerializer.Serialize(value, options);
+            using var content = new StringContent(json, MediaTypeHeaderValue.Parse("application/json"));
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, requestUri) { Content = content };
+            return httpClient.Send(httpRequest);
+        }
+
+        public static T? ReadFromJson<T>(this HttpContent content, JsonSerializerOptions? options = null)
+        {
+            using var contentStream = content.ReadAsStream();
+            return JsonSerializer.Deserialize<T>(contentStream, options);
         }
     }
 }

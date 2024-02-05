@@ -1,9 +1,9 @@
 ﻿// Copyright (c) 2024 Marco Concas. All rights reserved.
 // Licensed under the Apache License.
 
-namespace Telegram
+namespace Telegram.Types
 {
-    public class TelegramResponse<T>
+    internal class Response<T>
     {
         public bool Ok { get; set; }
         public int? ErrorCode { get; set; }
