@@ -5,5 +5,7 @@
     <Nullable>enable</Nullable>
     <OutputType>Library</OutputType>
 	<IsTransformWebConfigDisabled>true</IsTransformWebConfigDisabled>
+	<SignAssembly>True</SignAssembly>
+	<AssemblyOriginatorKeyFile>key.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 </Project>
