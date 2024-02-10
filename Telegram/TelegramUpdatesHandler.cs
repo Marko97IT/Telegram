@@ -1,6 +1,7 @@
 ﻿// Copyright (c) 2024 Marco Concas. All rights reserved.
 // Licensed under the Apache License.
 
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using System.Net;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -95,38 +96,24 @@ namespace Telegram
                             throw new ArgumentNullException(nameof(WebhookConfiguration));
                         }
 
-                        if (!_webhookConfiguration.HttpPort.HasValue && !_webhookConfiguration.HttpsPort.HasValue)
-                        {
-                            throw new InvalidOperationException("You should specify a valid port");
-                        }
-
-                        if (_webhookConfiguration.HttpPort!.Value < 0 && _webhookConfiguration.HttpPort!.Value > 65535)
-                        {
-                            throw new InvalidOperationException("The specified HTTP port is not valid");
-                        }
-
-                        if (_webhookConfiguration.HttpsPort!.Value < 0 && _webhookConfiguration.HttpsPort!.Value > 65535)
+                        if (_webhookConfiguration.HttpsPort < 0 && _webhookConfiguration.HttpsPort > 65535)
                         {
                             throw new InvalidOperationException("The specified HTTPS port is not valid");
                         }
 
-                        using var sslCertificate = _webhookConfiguration.HttpsPort.HasValue ? (_webhookConfiguration.Certificate ?? GenerateSelfSignedCertificate()) : null;
+                        using var sslCertificate = GenerateSelfSignedCertificate();
                         var secretToken = StringExtensions.GenerateRandomString(30);
-                        await _telegramClient.SetWebhookAsync($"{_webhookConfiguration.Domain}/webhook", _webhookConfiguration.SendPublicCertificateToTelegram == true ? sslCertificate?.GetByteArrayAsPem() : null, null, _webhookConfiguration.MaxConnections, null, _webhookConfiguration.DropPendingUpdates, secretToken, _cancellationTokenSource.Token);
+                        await _telegramClient.SetWebhookAsync($"{_webhookConfiguration.GetHostDomain()}/webhook", sslCertificate?.GetByteArrayAsPem(), null, _webhookConfiguration.MaxConnections, null, _webhookConfiguration.DropPendingUpdates, secretToken, _cancellationTokenSource.Token);
 
                         var builder = WebApplication.CreateSlimBuilder();
                         builder.Logging.ClearProviders();
                         builder.WebHost.ConfigureKestrel(config =>
                         {
-                            if (_webhookConfiguration.HttpsPort.HasValue && sslCertificate != null)
+                            config.Listen(IPAddress.Any, _webhookConfiguration.HttpsPort, listenOptions =>
                             {
-                                config.Listen(IPAddress.Any, _webhookConfiguration.HttpsPort.Value, listenOptions => listenOptions.UseHttps(sslCertificate));
-                            }
-
-                            if (_webhookConfiguration.HttpPort.HasValue)
-                            {
-                                config.Listen(IPAddress.Any, _webhookConfiguration.HttpPort.Value);
-                            }
+                                listenOptions.Protocols = HttpProtocols.Http2 | HttpProtocols.Http3;
+                                listenOptions.UseHttps(sslCertificate!);
+                            });
                         });
 
                         using var webHost = builder.Build();
@@ -162,10 +149,7 @@ namespace Telegram
                             await webHost.RunAsync(_cancellationTokenSource.Token);
                         }
                         catch (TaskCanceledException) { }
-
                         await _telegramClient.DeleteWebhookAsync(_webhookConfiguration.DropPendingUpdates);
-                        //await webHost.DisposeAsync();
-                        //sslCertificate?.Dispose();
                     }
                 }).Start();
             }
@@ -185,13 +169,16 @@ namespace Telegram
         }
 
         /// <summary>
-        /// Generate a self signed certificate used for the server by the webhook if HTTPS is needed.
+        /// Generate a self signed certificate for the webhook server.
         /// </summary>
         /// <returns>A self signed certificate as <see cref="X509Certificate2"/> object.</returns>
         private X509Certificate2 GenerateSelfSignedCertificate()
         {
             using var rsa = RSA.Create(2048);
-            var csr = new CertificateRequest($"cn={_webhookConfiguration!.Domain}", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            var csr = new CertificateRequest($"cn={_webhookConfiguration!.GetHostDomain()}", rsa, HashAlgorithmName.SHA512, RSASignaturePadding.Pkcs1);
+            var san = new SubjectAlternativeNameBuilder();
+            san.AddDnsName(_webhookConfiguration!.GetHostDomain());
+            csr.CertificateExtensions.Add(san.Build());
             using var certificate = csr.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddYears(10));
             var pfx = certificate.Export(X509ContentType.Pfx);
             return new X509Certificate2(pfx);
