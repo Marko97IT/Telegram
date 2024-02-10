@@ -103,7 +103,7 @@ namespace Telegram
 
                         using var sslCertificate = GenerateSelfSignedCertificate();
                         var secretToken = StringExtensions.GenerateRandomString(30);
-                        await _telegramClient.SetWebhookAsync($"{_webhookConfiguration.GetHostDomain()}/webhook", sslCertificate?.GetByteArrayAsPem(), null, _webhookConfiguration.MaxConnections, null, _webhookConfiguration.DropPendingUpdates, secretToken, _cancellationTokenSource.Token);
+                        await _telegramClient.SetWebhookAsync($"{_webhookConfiguration.GetHostDomain()}/webhook", !_webhookConfiguration.DontSendCertificate ? sslCertificate?.GetByteArrayAsPem() : null, null, _webhookConfiguration.MaxConnections, null, _webhookConfiguration.DropPendingUpdates, secretToken, _cancellationTokenSource.Token);
 
                         var builder = WebApplication.CreateSlimBuilder();
                         builder.Logging.ClearProviders();
@@ -111,7 +111,6 @@ namespace Telegram
                         {
                             config.Listen(IPAddress.Any, _webhookConfiguration.HttpsPort, listenOptions =>
                             {
-                                listenOptions.Protocols = HttpProtocols.Http2 | HttpProtocols.Http3;
                                 listenOptions.UseHttps(sslCertificate!);
                             });
                         });

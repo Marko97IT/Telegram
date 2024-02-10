@@ -21,6 +21,10 @@ namespace Telegram.Configurations
         /// </summary>
         public int? MaxConnections { get; set; }
         /// <summary>
+        /// Don't send the certificate to Telegram. The default value is <b>false</b>.
+        /// </summary>
+        public bool DontSendCertificate { get; set; } = false;
+        /// <summary>
         /// This will ignore previously updates that hasn't processed.
         /// </summary>
         public bool? DropPendingUpdates { get; set; }
