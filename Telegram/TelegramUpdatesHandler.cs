@@ -1,7 +1,6 @@
 ﻿// Copyright (c) 2024 Marco Concas. All rights reserved.
 // Licensed under the Apache License.
 
-using Microsoft.AspNetCore.Server.Kestrel.Core;
 using System.Net;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -107,13 +106,7 @@ namespace Telegram
 
                         var builder = WebApplication.CreateSlimBuilder();
                         builder.Logging.ClearProviders();
-                        builder.WebHost.ConfigureKestrel(config =>
-                        {
-                            config.Listen(IPAddress.Any, _webhookConfiguration.HttpsPort, listenOptions =>
-                            {
-                                listenOptions.UseHttps(sslCertificate!);
-                            });
-                        });
+                        builder.WebHost.ConfigureKestrel(config => config.Listen(IPAddress.Any, _webhookConfiguration.HttpsPort, listenOptions => listenOptions.UseHttps(sslCertificate!)));
 
                         using var webHost = builder.Build();
                         webHost.UseRouting();
