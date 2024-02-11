@@ -184,6 +184,12 @@ namespace Telegram
             StopReceivingUpdates();
             _cancellationTokenSource.Dispose();
             _telegramClient.Dispose();
+
+            foreach (var eventHandler in IncomingUpdateReceived.GetInvocationList())
+            {
+                IncomingUpdateReceived -= (EventHandler<IncomingUpdateReceivedEventArgs>)eventHandler;
+            }
+
             GC.SuppressFinalize(this);
         }
     }

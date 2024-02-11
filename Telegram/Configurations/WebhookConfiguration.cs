@@ -11,7 +11,7 @@ namespace Telegram.Configurations
         /// <summary>
         /// The domain without protocol prefix and without paths that will be used by Telegram to communicate incoming updates. It can be also an IP address.
         /// </summary>
-        public required string Domain { get; set; }
+        public string Domain { get; set; }
         /// <summary>
         /// The port used to serve the local server with HTTPS protocol. The default value is <b>443</b>.
         /// </summary>

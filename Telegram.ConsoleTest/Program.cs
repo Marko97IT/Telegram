@@ -1,5 +1,6 @@
 ﻿using Telegram.Configurations;
 using Telegram.Enums;
+using Telegram.Events;
 
 namespace Telegram.ConsoleTest
 {
@@ -7,20 +8,31 @@ namespace Telegram.ConsoleTest
     {
         static void Main(string[] args)
         {
-            using var telegramUpdatesHandler = new TelegramUpdatesHandler(GetUpdatesWay.Webhook, "6436458381:AAHSxWbCRqwlSbjnQH1vppmtbyl01PkZK_s", new WebhookConfiguration
+            var botToken = "6436458381:AAF1hk46kEAJnZo8L1aYDsmnY7EXDDa-2_I";
+            var webhookConfiguration = new WebhookConfiguration
             {
-                Domain = "dev.telegramsdk.net",
-                DontSendCertificate = false,
-                MaxConnections = 50,
-                DropPendingUpdates = true
-            });
+                Domain = "example.com"
+            };
+            using var handler = new TelegramUpdatesHandler(GetUpdatesWay.Webhook, botToken, webhookConfiguration);
+
+            handler.IncomingUpdateReceived += (object? sender, IncomingUpdateReceivedEventArgs e) =>
+            {
+                var update = e.Update;
+            };
+
+            handler.IncomingUpdateReceived += (object? sender, IncomingUpdateReceivedEventArgs e) =>
+            {
+                var update = e.Update;
+            };
 
             Console.CancelKeyPress += (object? sender, ConsoleCancelEventArgs e) =>
             {
-                telegramUpdatesHandler.StopReceivingUpdates();
+                handler.StopReceivingUpdates();
             };
             
-            telegramUpdatesHandler.StartReceivingUpdates();
+            handler.StartReceivingUpdates();
+            Task.Delay(3000).Wait();
+            handler.Dispose();
             Console.ReadLine();
         }
     }
